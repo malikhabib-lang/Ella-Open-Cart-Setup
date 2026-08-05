@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ella 48-DIG Reagent Prep Wizard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <aside class="sidebar" aria-label="Workflow progress">
+      <div class="brand">
+        <span class="brand-mark">E</span>
+        <div>
+          <h1>Ella 48-DIG Prep</h1>
+          <p>Open cartridge reagent workflow</p>
+        </div>
+      </div>
+
+      <nav class="steps" id="stepNav" aria-label="Wizard steps"></nav>
+
+      <section class="reference-panel">
+        <h2>Run Defaults</h2>
+        <dl>
+          <div><dt>Antibody stock</dt><dd>1 mg/mL in PBS</dd></div>
+          <div><dt>DIG reaction</dt><dd>5:1 DIG-NHS to protein</dd></div>
+          <div><dt>Biotin reaction</dt><dd>10:1 Biotin-NHS to protein</dd></div>
+          <div><dt>Cartridge reagent</dt><dd>3.5 µg/mL recommended</dd></div>
+        </dl>
+      </section>
+    </aside>
+
+    <section class="workspace">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Simple Plex 48-Digoxigenin Cartridge</p>
+          <h2 id="stepTitle">Reagent Setup</h2>
+        </div>
+        <div class="progress-wrap" aria-label="Completion">
+          <span id="progressText">0% complete</span>
+          <div class="progress-track"><div id="progressBar"></div></div>
+        </div>
+      </header>
+
+      <section class="notice">
+        <strong>Safety:</strong> Use appropriate PPE. Digoxigenin is acutely toxic, and DMF/DMSO are strong organic solvents. This tool summarizes and calculates from the quick start guide; follow your lab SOP and manufacturer documentation.
+      </section>
+
+      <form id="wizardForm">
+        <article class="wizard-step active" data-step="0" data-title="Reagent Setup">
+          <div class="panel-grid">
+            <section class="panel wide">
+              <div class="panel-heading">
+                <h3>Prepare Starting Reagents</h3>
+                <span class="tag">Before conjugation</span>
+              </div>
+              <div class="checklist">
+                <label><input type="checkbox" data-task> Reconstitute Digoxigenin-NHS with 500 µL DMF, vortex 15-20 seconds.</label>
+                <label><input type="checkbox" data-task> Prepare intermediate Digoxigenin-NHS: 20 µL reconstituted DIG-NHS + 40 µL DMF, vortex 15-20 seconds.</label>
+                <label><input type="checkbox" data-task> Prepare Biotin-XX, SE at 1.0 mg/mL in DMSO and use within 15 minutes.</label>
+                <label><input type="checkbox" data-task> Prepare sodium bicarbonate at 75 mg/mL in deionized water.</label>
+                <label><input type="checkbox" data-task> Dilute antibody stock to 1 mg/mL in PBS, vortex each tube for 10 seconds.</label>
+                <label><input type="checkbox" data-task> If antibody stock contains carrier protein, remove it by buffer exchange before conjugation.</label>
+              </div>
+            </section>
+
+            <section class="panel wide">
+              <div class="panel-heading">
+                <h3>Scale Helper</h3>
+                <span class="tag">IgG defaults</span>
+              </div>
+              <div class="dilution-grid">
+                <section class="mini-panel">
+                  <h4>DIG Capture (Ab 1)</h4>
+                  <label class="field">
+                    <span>Reaction count</span>
+                    <input id="ab1ReactionCount" type="number" min="1" step="1" value="1">
+                  </label>
+                  <label class="field">
+                    <span>Overage</span>
+                    <select id="ab1Overage">
+                      <option value="0">None</option>
+                      <option value="0.1" selected>10%</option>
+                      <option value="0.15">15%</option>
+                      <option value="0.2">20%</option>
+                    </select>
+                  </label>
+                  <div class="result-stack" id="ab1BulkPrep"></div>
+                </section>
+                <section class="mini-panel">
+                  <h4>Biotin Detect (Ab 2)</h4>
+                  <label class="field">
+                    <span>Reaction count</span>
+                    <input id="ab2ReactionCount" type="number" min="1" step="1" value="1">
+                  </label>
+                  <label class="field">
+                    <span>Overage</span>
+                    <select id="ab2Overage">
+                      <option value="0">None</option>
+                      <option value="0.1" selected>10%</option>
+                      <option value="0.15">15%</option>
+                      <option value="0.2">20%</option>
+                    </select>
+                  </label>
+                  <div class="result-stack" id="ab2BulkPrep"></div>
+                </section>
+              </div>
+            </section>
+          </div>
+        </article>
+
+        <article class="wizard-step" data-step="1" data-title="Conjugate Antibodies">
+          <div class="panel-grid">
+            <section class="panel">
+              <div class="panel-heading">
+                <h3>DIG Capture Conjugate</h3>
+                <span class="tag">Dark, 1 hour</span>
+              </div>
+              <div class="recipe" id="digRecipe"></div>
+              <div class="checklist compact">
+                <label><input type="checkbox" data-task> Combine reagents in a hinge-cap vial.</label>
+                <label><input type="checkbox" data-task> Vortex well and apply parafilm.</label>
+                <label><input type="checkbox" data-task> Incubate in the dark for 1 hour at room temperature.</label>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-heading">
+                <h3>Biotin Detect Conjugate</h3>
+                <span class="tag">Dark, 1 hour</span>
+              </div>
+              <div class="recipe" id="bioRecipe"></div>
+              <div class="checklist compact">
+                <label><input type="checkbox" data-task> Combine reagents in a hinge-cap vial.</label>
+                <label><input type="checkbox" data-task> Vortex well and apply parafilm.</label>
+                <label><input type="checkbox" data-task> Incubate in the dark for 1 hour at room temperature.</label>
+              </div>
+            </section>
+
+            <section class="panel wide calculator">
+              <div class="panel-heading">
+                <h3>Non-Antibody Volume Calculator</h3>
+                <span class="tag">Optional</span>
+              </div>
+              <div class="field-row">
+                <label class="field"><span>Protein mass (mg)</span><input id="proteinMass" type="number" step="0.001" value="0.15"></label>
+                <label class="field"><span>Protein MW (g/mol)</span><input id="proteinMw" type="number" step="1" value="150000"></label>
+                <label class="field"><span>Label</span><select id="labelType"><option value="dig">DIG-NHS</option><option value="biotin">Biotin-NHS</option></select></label>
+                <label class="field"><span>Label concentration (mg/mL)</span><input id="labelConc" type="number" step="0.01" value="0.67"></label>
+                <label class="field"><span>Molar excess</span><input id="molarExcess" type="number" step="0.1" value="5"></label>
+              </div>
+              <output class="callout" id="labelVolume"></output>
+            </section>
+          </div>
+        </article>
+
+        <article class="wizard-step" data-step="2" data-title="Remove Free Label">
+          <div class="panel-grid">
+            <section class="panel">
+              <div class="panel-heading">
+                <h3>Column Selection</h3>
+                <span class="tag">MWCO</span>
+              </div>
+              <label class="field">
+                <span>Protein molecular weight (kD)</span>
+                <input id="proteinKd" type="number" min="1" step="0.1" value="150">
+              </label>
+              <output class="callout" id="columnChoice"></output>
+            </section>
+            <section class="panel wide">
+              <div class="panel-heading">
+                <h3>Desalt Conjugates</h3>
+                <span class="tag">PBS equilibration</span>
+              </div>
+              <div class="checklist">
+                <label><input type="checkbox" data-task> Select 40K MWCO columns for antibodies/proteins larger than 40 kD.</label>
+                <label><input type="checkbox" data-task> Select 7K MWCO columns for proteins between 7 kD and 40 kD.</label>
+                <label><input type="checkbox" data-task> Follow the spin column manufacturer protocol to remove unreacted label.</label>
+                <label><input type="checkbox" data-task> Equilibrate columns with PBS.</label>
+                <label><input type="checkbox" data-task> Retain conjugates in 1.7 mL hinge-cap vials and discard columns.</label>
+              </div>
+            </section>
+          </div>
+        </article>
+
+        <article class="wizard-step" data-step="3" data-title="Quantitate Conjugates">
+          <div class="panel-grid">
+            <section class="panel wide">
+              <div class="panel-heading">
+                <h3>Plate Read Checklist</h3>
+                <span class="tag">A280</span>
+              </div>
+              <div class="checklist">
+                <label><input type="checkbox" data-task> Allocate 1-2 blank wells and add 100 µL PBS to each.</label>
+                <label><input type="checkbox" data-task> Add 100 µL antibody-conjugate sample per well.</label>
+                <label><input type="checkbox" data-task> Read the microplate at 280 nm with blank subtraction enabled.</label>
+                <label><input type="checkbox" data-task> Record OD values, then return each sample to its corresponding vial.</label>
+              </div>
+            </section>
+
+            <section class="panel calculator">
+              <div class="panel-heading">
+                <h3>Concentration Calculator</h3>
+                <span class="tag">IgG A280</span>
+              </div>
+              <label class="field"><span>Blank-subtracted OD280</span><input id="odValue" type="number" step="0.001" value="0.7"></label>
+              <label class="field"><span>Pool volume (mL)</span><input id="poolVolume" type="number" step="0.001" value="0.15"></label>
+              <label class="field checkbox-field"><input id="addRd2" type="checkbox" checked> Add 5X Reagent Diluent 2 at pool volume / 10</label>
+              <output class="result-stack" id="quantResults"></output>
+              <div class="checklist compact">
+                <label><input type="checkbox" data-task> Store final conjugates at 4 °C.</label>
+              </div>
+            </section>
+          </div>
+        </article>
+
+        <article class="wizard-step" data-step="4" data-title="Pipette Cartridge">
+          <div class="panel-grid">
+            <section class="panel wide calculator">
+              <div class="panel-heading">
+                <h3>Capture and Detect Dilution Calculators</h3>
+                <span class="tag">Fresh before run</span>
+              </div>
+              <div class="field-row small">
+                <label class="field"><span>Preparation overage</span>
+                  <select id="workingOverage">
+                    <option value="0">None</option>
+                    <option value="0.1" selected>10%</option>
+                    <option value="0.15">15%</option>
+                    <option value="0.2">20%</option>
+                  </select>
+                </label>
+                <label class="field"><span>Default target concentration (µg/mL)</span><input id="defaultTargetUg" type="number" step="0.1" value="3.5"></label>
+                <label class="field"><span>Default working volume (mL)</span><input id="defaultWorkingVolume" type="number" step="0.1" value="3"></label>
+              </div>
+              <div class="dilution-grid">
+                <section class="mini-panel">
+                  <h4>DIG Capture Antibody</h4>
+                  <label class="field"><span>Capture stock concentration (mg/mL)</span><input id="captureStockConc" type="number" step="0.001" value="0.455"></label>
+                  <label class="field"><span>Target capture concentration (µg/mL)</span><input id="captureTargetUg" type="number" step="0.1" value="3.5"></label>
+                  <label class="field"><span>Final capture working volume (mL)</span><input id="captureWorkingVolume" type="number" step="0.1" value="3"></label>
+                  <output class="result-stack" id="captureDilutionResults"></output>
+                </section>
+                <section class="mini-panel">
+                  <h4>Biotin Detect Antibody</h4>
+                  <label class="field"><span>Detect stock concentration (mg/mL)</span><input id="detectStockConc" type="number" step="0.001" value="0.455"></label>
+                  <label class="field"><span>Target detect concentration (µg/mL)</span><input id="detectTargetUg" type="number" step="0.1" value="3.5"></label>
+                  <label class="field"><span>Final detect working volume (mL)</span><input id="detectWorkingVolume" type="number" step="0.1" value="3"></label>
+                  <output class="result-stack" id="detectDilutionResults"></output>
+                </section>
+              </div>
+              <p class="helper-text">Each calculator uses C1V1 = C2V2. Stock concentrations should be the final conjugate concentrations after quantitation and any 5X Reagent Diluent 2 addition.</p>
+            </section>
+
+            <section class="panel wide">
+              <div class="panel-heading">
+                <h3>Cartridge Loading</h3>
+                <span class="tag">48 inputs</span>
+              </div>
+              <div class="field-row small">
+                <label class="field"><span>C wells volume (µL)</span><input id="captureVolume" type="number" min="25" max="50" step="1" value="50"></label>
+                <label class="field"><span>D wells volume (µL)</span><input id="detectVolume" type="number" min="25" max="50" step="1" value="50"></label>
+                <label class="field"><span>Sample wells used</span><input id="sampleWells" type="number" min="0" max="48" step="1" value="48"></label>
+              </div>
+              <div class="result-stack" id="cartridgeTotals"></div>
+              <div class="checklist compact">
+                <label><input type="checkbox" data-task> Prepare 25 mL 1X Reagent Diluent 2: 5 mL concentrate + 20 mL DI water.</label>
+                <label><input type="checkbox" data-task> Dispense DIG capture reagent into all C wells.</label>
+                <label><input type="checkbox" data-task> Dispense biotin detect reagent into all D wells.</label>
+                <label><input type="checkbox" data-task> Dispense 50 µL sample, standard, control, or 1X Reagent Diluent 2 into all sample wells.</label>
+                <label><input type="checkbox" data-task> Add 1 mL wash buffer to each of the 6 wash troughs.</label>
+              </div>
+            </section>
+          </div>
+        </article>
+
+        <article class="wizard-step" data-step="5" data-title="Start Ella">
+          <div class="panel-grid">
+            <section class="panel wide">
+              <div class="panel-heading">
+                <h3>Runner Checklist</h3>
+                <span class="tag">Final handoff</span>
+              </div>
+              <div class="checklist">
+                <label><input type="checkbox" data-task> Scan the kit barcode.</label>
+                <label><input type="checkbox" data-task> Scan the cartridge barcode for confirmation, if enabled.</label>
+                <label><input type="checkbox" data-task> Assign samples to cartridge inlets in Runner software.</label>
+                <label><input type="checkbox" data-task> Open Ella door and lift the cartridge clamp.</label>
+                <label><input type="checkbox" data-task> Peel off protective lining from the bottom of the cartridge.</label>
+                <label><input type="checkbox" data-task> Insert cartridge into Ella cartridge holder.</label>
+                <label><input type="checkbox" data-task> Close cartridge clamp and door.</label>
+                <label><input type="checkbox" data-task> Confirm selections and click Start in Runner software.</label>
+                <label><input type="checkbox" data-task> Discard the cartridge when the run is complete.</label>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-heading">
+                <h3>Session Summary</h3>
+                <span class="tag">Copy to notebook</span>
+              </div>
+              <textarea id="summary" readonly rows="13"></textarea>
+              <button class="secondary" type="button" id="copySummary">Copy Summary</button>
+            </section>
+          </div>
+        </article>
+      </form>
+
+      <footer class="controls">
+        <button type="button" id="prevBtn" class="secondary">Back</button>
+        <button type="button" id="resetBtn" class="secondary">Reset Checks</button>
+        <button type="button" id="nextBtn">Next</button>
+      </footer>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
