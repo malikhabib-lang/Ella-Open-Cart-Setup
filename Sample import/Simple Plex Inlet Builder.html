@@ -1,0 +1,395 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Simple Plex Inlet Builder</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap">
+<style>
+/* Layout: instrument-panel tool — setup rail on the left, inlet table on the right, CSV export strip across the bottom */
+:root{
+  --bg:#f3f5f7; --panel:#ffffff; --ink:#16202b; --muted:#5b6876; --line:#d9dfe6; --soft:#eaeef2;
+  --accent:#1f5fa8; --accent-ink:#ffffff; --accent-soft:#e3edf8;
+  --warn:#9a5b00; --warn-soft:#fff3df; --bad:#b4282e; --bad-soft:#fde8e8; --ok:#1d7a4a; --ok-soft:#e2f4ea;
+  --f-display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f141a; --panel:#161d25; --ink:#e4eaf0; --muted:#94a2b1; --line:#2a3542; --soft:#1d2630;
+  --accent:#6aa6ec; --accent-ink:#0b1420; --accent-soft:#1a2b40;
+  --warn:#f0b35a; --warn-soft:#2e2414; --bad:#f2878b; --bad-soft:#331a1c; --ok:#6fd19c; --ok-soft:#14291e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --panel:#161d25; --ink:#e4eaf0; --muted:#94a2b1; --line:#2a3542; --soft:#1d2630;
+  --accent:#6aa6ec; --accent-ink:#0b1420; --accent-soft:#1a2b40;
+  --warn:#f0b35a; --warn-soft:#2e2414; --bad:#f2878b; --bad-soft:#331a1c; --ok:#6fd19c; --ok-soft:#14291e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--f-body)}
+.wrap{max-width:1240px;margin:0 auto;padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font:600 26px/1.15 var(--f-display);margin:0;letter-spacing:.01em;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0;max-width:62ch}
+.tally{font:500 13px var(--f-mono);font-variant-numeric:tabular-nums;color:var(--muted);display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.tally b{font:600 22px var(--f-mono);color:var(--ink)}
+.grid{display:grid;grid-template-columns:340px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel h2{font:600 12px var(--f-display);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0}
+.field{display:flex;flex-direction:column;gap:5px}
+label,.lbl{font-weight:500;font-size:13px}
+.hint{color:var(--muted);font-size:12px}
+input[type=text],input[type=number],select,textarea{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:7px 9px;width:100%}
+textarea{font:13px/1.5 var(--f-mono);resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 80px 1fr;gap:10px}
+.formats{display:flex;flex-wrap:wrap;gap:6px}
+.formats button{font:500 13px var(--f-mono);padding:6px 10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:5px;cursor:pointer}
+.formats button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn{font:500 13px var(--f-body);padding:7px 12px;border-radius:5px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:13px}
+.check input{margin-top:3px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 12px var(--f-mono);background:var(--accent-soft);color:var(--ink);padding:3px 8px;border-radius:4px}
+.chip.over{background:var(--bad-soft);color:var(--bad)}
+.tablebox{overflow:auto;max-height:560px;border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th,td{padding:4px 6px;border-bottom:1px solid var(--line);text-align:left}
+thead th{position:sticky;top:0;background:var(--soft);font:600 11px var(--f-display);text-transform:uppercase;letter-spacing:.07em;color:var(--muted);z-index:1;padding:8px 6px}
+td.n{font:500 13px var(--f-mono);font-variant-numeric:tabular-nums;color:var(--muted);text-align:right;width:44px;padding-right:10px}
+td input{border-color:transparent;background:transparent;padding:5px 6px}
+td input:hover{border-color:var(--line)}
+td input.dil{width:70px;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+tr.empty td input.nm{background:var(--soft)}
+tr.bad td input.dil{background:var(--bad-soft);color:var(--bad)}
+.paste[hidden]{display:none!important}
+.paste{display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--soft);border-radius:6px}
+.msgs{display:flex;flex-direction:column;gap:6px}
+.msg{font-size:13px;padding:7px 10px;border-radius:5px;border-left:3px solid}
+.msg.bad{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.msg.warn{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+.msg.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.export{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px}
+@media (max-width:900px){.export{grid-template-columns:1fr}}
+pre{margin:0;font:12.5px/1.55 var(--f-mono);font-variant-numeric:tabular-nums;background:var(--soft);border-radius:6px;padding:12px;overflow:auto;max-height:320px;white-space:pre}
+pre .h{color:var(--accent);font-weight:500}
+.toast{font-size:13px;color:var(--ok);min-height:1.5em}
+.toast.err{color:var(--bad)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head><body style="margin:0"><div class="wrap">
+  <header>
+    <div>
+      <h1>Simple Plex Inlet Builder</h1>
+      <p class="sub">Build the sample inlet template for Simple Plex Runner: choose the cartridge, list the analytes, fill in your samples, then export the CSV for import.</p>
+    </div>
+    <div class="tools">
+      <div class="tally" aria-live="polite"><b id="tA">0</b> analytes × <b id="tS">0</b> samples = <b id="tR">0</b> rows</div>
+      <button class="btn" type="button" id="reset">Reset</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="setupH">
+      <h2 id="setupH">Run setup</h2>
+
+      <div class="field">
+        <span class="lbl" id="fmtLbl">Cartridge format (inlets × analytes)</span>
+        <div class="formats" role="group" aria-labelledby="fmtLbl" id="formats"></div>
+        <div class="row2" id="customBox" hidden>
+          <div class="field"><label for="cInlets">Inlets</label><input type="number" id="cInlets" min="1" max="96"></div>
+          <div class="field"><label for="cMax">Analytes</label><input type="number" id="cMax" min="1" max="16"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="analytes">Analytes, one per line</label>
+        <textarea id="analytes" rows="5" spellcheck="false"></textarea>
+        <div class="chips" id="chips"></div>
+        <span class="hint">Spell each name the way it appears in the cartridge's analyte list in Runner.</span>
+      </div>
+
+      <div class="field">
+        <span class="lbl">Defaults for new samples</span>
+        <div class="row3">
+          <div class="field"><label for="dType" class="hint">Sample type</label><input type="text" id="dType" list="types"></div>
+          <div class="field"><label for="dDil" class="hint">Dilution</label><input type="number" id="dDil" min="1" step="any"></div>
+          <div class="field"><label for="dCom" class="hint">Comment</label><input type="text" id="dCom"></div>
+        </div>
+        <button class="btn" id="applyDefaults" type="button">Apply defaults to every sample</button>
+      </div>
+
+      <div class="field">
+        <span class="lbl">Output</span>
+        <label class="check"><input type="checkbox" id="skipEmpty"> <span>Leave out inlets with no sample name</span></label>
+        <label class="check"><input type="checkbox" id="bom"> <span>Save as Excel-style UTF-8 (BOM), matching your existing template</span></label>
+        <div class="field"><label for="fname" class="hint">File name</label><input type="text" id="fname"></div>
+      </div>
+
+      <div class="field">
+        <span class="lbl">Start from an existing template</span>
+        <input type="file" id="importFile" accept=".csv,text/csv">
+        <span class="hint">Loads analytes and samples from a Runner inlet CSV so you can edit it.</span>
+        <div class="toast" id="importMsg" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="sampH">
+      <div class="tools" style="justify-content:space-between">
+        <h2 id="sampH">Samples by inlet</h2>
+        <div class="tools">
+          <button class="btn" type="button" id="pasteToggle">Paste from Excel</button>
+          <button class="btn" type="button" id="autoName">Auto-name</button>
+          <button class="btn" type="button" id="clearNames">Clear names</button>
+        </div>
+      </div>
+
+      <div class="paste" id="pasteBox" hidden>
+        <label for="pasteArea">Paste one sample per row, starting at inlet 1. Columns: name, then optional dilution and comment (copy straight from Excel).</label>
+        <textarea id="pasteArea" rows="6" spellcheck="false" placeholder="Patient 001	4	Baseline&#10;Patient 002	4	Baseline&#10;QC Low	1	Kit control"></textarea>
+        <div class="tools">
+          <button class="btn primary" type="button" id="pasteApply">Fill inlets</button>
+          <label class="check" style="align-items:center"><input type="checkbox" id="pasteType"> <span>Third column is sample type, fourth is comment</span></label>
+        </div>
+      </div>
+
+      <div class="paste" id="autoBox" hidden>
+        <div class="row3" style="grid-template-columns:1fr 90px auto;align-items:end">
+          <div class="field"><label for="prefix">Name prefix</label><input type="text" id="prefix" value="Sample "></div>
+          <div class="field"><label for="startN">Start at</label><input type="number" id="startN" value="1" min="0"></div>
+          <button class="btn primary" type="button" id="autoApply">Name all inlets</button>
+        </div>
+      </div>
+
+      <div class="tablebox">
+        <table>
+          <thead><tr><th style="text-align:right">Inlet</th><th>Sample name</th><th>Sample type</th><th>Dilution</th><th>Comments</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <datalist id="types"><option value="Unknown"></option><option value="Control"></option></datalist>
+    </section>
+  </div>
+
+  <section class="panel export" aria-labelledby="expH">
+    <div class="field" style="min-width:0">
+      <h2 id="expH">CSV preview</h2>
+      <pre id="preview" aria-label="CSV preview"></pre>
+    </div>
+    <div class="field" style="gap:12px">
+      <h2>Checks</h2>
+      <div class="msgs" id="msgs"></div>
+      <div class="tools">
+        <button class="btn primary" type="button" id="download">Download CSV</button>
+        <button class="btn" type="button" id="copy">Copy CSV</button>
+      </div>
+      <div class="toast" id="toast" aria-live="polite"></div>
+      <span class="hint">Rows are grouped by analyte, then by inlet, in the same layout as your template.</span>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+const FORMATS=[{id:'16x4',i:16,a:4},{id:'32x4',i:32,a:4},{id:'32x8',i:32,a:8},{id:'72x1',i:72,a:1},{id:'custom',i:null,a:null}];
+const HEADER='Analyte Name,Inlet,Sample Type,Sample Name,Dilution Factor,Comments ';
+const KEY='spInletBuilder.v1';
+
+// Example: the user's own uploaded template
+let S={format:'16x4',inlets:16,maxA:4,analytes:['IFNg','IL-2ra','IL-6','TNF-a'],
+  def:{type:'Unknown',dil:2,com:'Test'},samples:[],skipEmpty:true,bom:true,fname:'Plate map'};
+for(let k=1;k<=16;k++)S.samples.push({name:'Sample '+k,type:'Unknown',dil:'2',com:'Test'});
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.samples)S=Object.assign(S,s);}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+
+const $=id=>document.getElementById(id);
+
+function fitSamples(){
+  while(S.samples.length<S.inlets)S.samples.push({name:'',type:S.def.type,dil:String(S.def.dil),com:S.def.com});
+  if(S.samples.length>S.inlets)S.samples.length=S.inlets;
+}
+
+function renderFormats(){
+  const box=$('formats');box.innerHTML='';
+  FORMATS.forEach(f=>{const b=document.createElement('button');b.type='button';
+    b.textContent=f.id==='custom'?'Custom':f.id.replace('x',' × ');
+    b.setAttribute('aria-pressed',S.format===f.id);
+    b.onclick=()=>{S.format=f.id;if(f.i){S.inlets=f.i;S.maxA=f.a;}renderAll();};
+    box.appendChild(b);});
+  $('customBox').hidden=S.format!=='custom';
+  $('cInlets').value=S.inlets;$('cMax').value=S.maxA;
+}
+
+function renderTable(){
+  fitSamples();
+  const tb=$('tbody');tb.innerHTML='';
+  S.samples.forEach((s,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td class="n">${i+1}</td>
+      <td><input type="text" class="nm" id="nm${i}" aria-label="Inlet ${i+1} sample name"></td>
+      <td><input type="text" class="ty" id="ty${i}" list="types" aria-label="Inlet ${i+1} sample type"></td>
+      <td><input type="number" class="dil" id="dl${i}" min="1" step="any" aria-label="Inlet ${i+1} dilution factor"></td>
+      <td><input type="text" class="cm" id="cm${i}" aria-label="Inlet ${i+1} comment"></td>`;
+    const [nm,ty,dl,cm]=tr.querySelectorAll('input');
+    nm.value=s.name;ty.value=s.type;dl.value=s.dil;cm.value=s.com;
+    nm.oninput=()=>{s.name=nm.value;mark(tr,s);update();};
+    ty.oninput=()=>{s.type=ty.value;update();};
+    dl.oninput=()=>{s.dil=dl.value;mark(tr,s);update();};
+    cm.oninput=()=>{s.com=cm.value;update();};
+    nm.addEventListener('paste',e=>{const t=(e.clipboardData||{}).getData?e.clipboardData.getData('text'):'';
+      if(t&&/[\n\t]/.test(t.trim())){e.preventDefault();fillFromPaste(t,i,false);}});
+    mark(tr,s);tb.appendChild(tr);
+  });
+}
+function badDil(v){const n=Number(v);return v===''||!isFinite(n)||n<1;}
+function mark(tr,s){tr.classList.toggle('empty',!s.name.trim());tr.classList.toggle('bad',!!s.name.trim()&&badDil(s.dil));}
+
+function readAnalytes(){
+  S.analytes=$('analytes').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+}
+function renderChips(){
+  const c=$('chips');c.innerHTML='';
+  S.analytes.forEach((a,i)=>{const sp=document.createElement('span');sp.className='chip'+(i>=S.maxA?' over':'');sp.textContent=a;c.appendChild(sp);});
+}
+
+function esc(v){v=String(v??'');return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+function used(){return S.samples.map((s,i)=>({s,i})).filter(o=>!S.skipEmpty||o.s.name.trim());}
+function buildRows(){
+  const rows=[];
+  S.analytes.forEach(a=>used().forEach(({s,i})=>rows.push([a,i+1,s.type.trim()||'Unknown',s.name.trim(),String(s.dil).trim(),s.com])));
+  return rows;
+}
+function buildCSV(){return (S.bom?'﻿':'')+[HEADER].concat(buildRows().map(r=>r.map(esc).join(','))).join('\r\n')+'\r\n';}
+
+function checks(){
+  const m=[];const u=used();
+  if(!S.analytes.length)m.push(['bad','Add at least one analyte.']);
+  if(!u.length)m.push(['bad','Add at least one sample name.']);
+  if(S.analytes.length>S.maxA)m.push(['bad',`This cartridge measures ${S.maxA} analyte${S.maxA>1?'s':''}; ${S.analytes.length} are listed. Remove ${S.analytes.length-S.maxA} or pick another format.`]);
+  const dupA=S.analytes.filter((a,i)=>S.analytes.findIndex(b=>b.toLowerCase()===a.toLowerCase())!==i);
+  if(dupA.length)m.push(['bad','Analyte listed twice: '+[...new Set(dupA)].join(', ')]);
+  const bd=u.filter(o=>badDil(o.s.dil)).map(o=>o.i+1);
+  if(bd.length)m.push(['bad','Dilution must be a number of 1 or more. Check inlet '+bd.join(', ')+'.']);
+  const names=u.map(o=>o.s.name.trim().toLowerCase()).filter(Boolean);
+  const dupN=[...new Set(names.filter((n,i)=>names.indexOf(n)!==i))];
+  if(dupN.length)m.push(['warn','Same sample name on more than one inlet ('+dupN.length+' name'+(dupN.length>1?'s':'')+'). Fine for replicates; otherwise rename.']);
+  const gaps=S.samples.map((s,i)=>!s.name.trim()?i+1:0).filter(Boolean);
+  if(u.length&&gaps.length&&gaps.some(g=>g<Math.max(...u.map(o=>o.i+1))))m.push(['warn','Inlet '+gaps.filter(g=>g<Math.max(...u.map(o=>o.i+1))).join(', ')+' left empty between filled inlets.']);
+  if(!m.some(x=>x[0]==='bad'))m.unshift(['ok',`Ready: ${S.analytes.length} × ${u.length} = ${S.analytes.length*u.length} rows.`]);
+  return m;
+}
+
+function update(){
+  const rows=buildRows();
+  $('tA').textContent=S.analytes.length;$('tS').textContent=used().length;$('tR').textContent=rows.length;
+  const pre=$('preview');pre.innerHTML='';
+  const h=document.createElement('span');h.className='h';h.textContent=HEADER;pre.appendChild(h);
+  pre.appendChild(document.createTextNode('\n'+rows.map(r=>r.map(esc).join(',')).join('\n')));
+  const mb=$('msgs');mb.innerHTML='';const m=checks();
+  m.forEach(([k,t])=>{const d=document.createElement('div');d.className='msg '+k;d.textContent=t;mb.appendChild(d);});
+  const blocked=m.some(x=>x[0]==='bad');
+  $('download').disabled=blocked||!dl;$('copy').disabled=blocked;
+  renderChips();save();
+}
+
+function renderAll(){renderFormats();renderTable();
+  $('analytes').value=S.analytes.join('\n');$('dType').value=S.def.type;$('dDil').value=S.def.dil;$('dCom').value=S.def.com;
+  $('skipEmpty').checked=S.skipEmpty;$('bom').checked=S.bom;$('fname').value=S.fname;update();}
+
+function fillFromPaste(text,start,typeCol){
+  const lines=text.replace(/\r/g,'').split('\n');while(lines.length&&!lines[lines.length-1].trim())lines.pop();
+  const need=start+lines.length;
+  if(need>S.inlets){toast(`${lines.length} rows pasted but only ${S.inlets-start} inlets left. Extra rows were dropped.`,true);}
+  else toast(`Filled ${lines.length} inlet${lines.length>1?'s':''}.`);
+  fitSamples();
+  lines.slice(0,S.inlets-start).forEach((ln,k)=>{const c=ln.split('\t').map(x=>x.trim());const s=S.samples[start+k];
+    s.name=c[0]||'';
+    if(c[1])s.dil=c[1];
+    if(typeCol){if(c[2])s.type=c[2];if(c[3]!==undefined)s.com=c[3];}else if(c[2]!==undefined)s.com=c[2];
+  });
+  renderTable();update();
+}
+
+// CSV import
+function parseCSV(t){const out=[];let row=[],f='',q=false;
+  for(let i=0;i<t.length;i++){const ch=t[i];
+    if(q){if(ch==='"'){if(t[i+1]==='"'){f+='"';i++;}else q=false;}else f+=ch;}
+    else if(ch==='"')q=true;else if(ch===','){row.push(f);f='';}
+    else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&t[i+1]==='\n')i++;row.push(f);out.push(row);row=[];f='';}
+    else f+=ch;}
+  if(f!==''||row.length){row.push(f);out.push(row);}return out.filter(r=>r.some(c=>c.trim()));}
+$('importFile').onchange=e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();
+  r.onload=()=>{const msg=$('importMsg');msg.className='toast';
+    const rows=parseCSV(String(r.result).replace(/^﻿/,''));const hd=(rows.shift()||[]).map(h=>h.trim().toLowerCase());
+    const ix=n=>hd.indexOf(n);const iA=ix('analyte name'),iI=ix('inlet'),iT=ix('sample type'),iN=ix('sample name'),iD=ix('dilution factor'),iC=ix('comments');
+    if(iA<0||iI<0||iN<0){msg.className='toast err';msg.textContent='This file has no Analyte Name, Inlet and Sample Name columns, so it was not loaded.';return;}
+    const an=[],sm={};let maxI=0;
+    rows.forEach(c=>{const a=(c[iA]||'').trim(),n=parseInt(c[iI],10);if(a&&!an.includes(a))an.push(a);
+      if(n>0){maxI=Math.max(maxI,n);if(!sm[n])sm[n]={name:(c[iN]||'').trim(),type:iT>=0?(c[iT]||'').trim():'Unknown',dil:iD>=0?(c[iD]||'').trim():'1',com:iC>=0?(c[iC]||''):''};}});
+    const f=FORMATS.find(f=>f.i&&f.i>=maxI&&f.a>=an.length);
+    if(f){S.format=f.id;S.inlets=f.i;S.maxA=f.a;}else{S.format='custom';S.inlets=maxI;S.maxA=Math.max(an.length,1);}
+    S.analytes=an;S.samples=[];for(let k=1;k<=S.inlets;k++)S.samples.push(sm[k]||{name:'',type:S.def.type,dil:String(S.def.dil),com:S.def.com});
+    S.fname=file.name.replace(/\.csv$/i,'');renderAll();
+    msg.textContent=`Loaded ${an.length} analytes and ${Object.keys(sm).length} samples from ${file.name}.`;};
+  r.readAsText(file);e.target.value='';};
+
+// controls
+$('analytes').oninput=()=>{readAnalytes();update();};
+$('cInlets').oninput=()=>{const v=parseInt($('cInlets').value,10);if(v>0&&v<=96){S.inlets=v;renderTable();update();}};
+$('cMax').oninput=()=>{const v=parseInt($('cMax').value,10);if(v>0){S.maxA=v;update();}};
+$('dType').oninput=()=>{S.def.type=$('dType').value;save();};
+$('dDil').oninput=()=>{S.def.dil=$('dDil').value;save();};
+$('dCom').oninput=()=>{S.def.com=$('dCom').value;save();};
+$('applyDefaults').onclick=()=>{S.samples.forEach(s=>{s.type=S.def.type;s.dil=String(S.def.dil);s.com=S.def.com;});renderTable();update();toast('Defaults applied to all '+S.samples.length+' inlets.');};
+$('skipEmpty').onchange=()=>{S.skipEmpty=$('skipEmpty').checked;update();};
+$('bom').onchange=()=>{S.bom=$('bom').checked;update();};
+$('fname').oninput=()=>{S.fname=$('fname').value;save();};
+$('pasteToggle').onclick=()=>{$('pasteBox').hidden=!$('pasteBox').hidden;$('autoBox').hidden=true;if(!$('pasteBox').hidden)$('pasteArea').focus();};
+$('autoName').onclick=()=>{$('autoBox').hidden=!$('autoBox').hidden;$('pasteBox').hidden=true;};
+$('pasteApply').onclick=()=>{const t=$('pasteArea').value;if(!t.trim()){toast('Paste some rows first.',true);return;}fillFromPaste(t,0,$('pasteType').checked);$('pasteBox').hidden=true;$('pasteArea').value='';};
+$('autoApply').onclick=()=>{const p=$('prefix').value;let n=parseInt($('startN').value,10);if(isNaN(n))n=1;
+  S.samples.forEach((s,i)=>s.name=p+(n+i));renderTable();update();$('autoBox').hidden=true;toast(`Named inlets ${p}${n} to ${p}${n+S.samples.length-1}.`);};
+$('clearNames').onclick=()=>{S.samples.forEach(s=>s.name='');renderTable();update();toast('Sample names cleared.');};
+
+// Reset: two clicks (dialogs are blocked in the viewer, so confirm in-page)
+let armed=null;
+$('reset').onclick=()=>{const b=$('reset');
+  if(!armed){b.textContent='Click again to clear all';b.classList.add('danger');
+    armed=setTimeout(()=>{armed=null;b.textContent='Reset';b.classList.remove('danger');},4000);return;}
+  clearTimeout(armed);armed=null;b.textContent='Reset';b.classList.remove('danger');
+  S={format:'16x4',inlets:16,maxA:4,analytes:[],def:{type:'Unknown',dil:1,com:''},samples:[],skipEmpty:true,bom:true,fname:'Inlet template'};
+  try{localStorage.removeItem(KEY);}catch(e){}
+  $('pasteBox').hidden=true;$('autoBox').hidden=true;$('importMsg').textContent='';
+  renderAll();toast('Cleared. Start a new template.');};
+
+let tt;function toast(t,err){const el=$('toast');el.className='toast'+(err?' err':'');el.textContent=t;clearTimeout(tt);tt=setTimeout(()=>el.textContent='',4000);}
+function fileName(){return ((S.fname||'Inlet template').replace(/[\\/:*?"<>|]+/g,'').trim()||'Inlet template')+'.csv';}
+
+$('copy').onclick=()=>{const t=buildCSV().replace(/^﻿/,'');
+  const fallback=()=>{const pre=$('preview');const rg=document.createRange();rg.selectNodeContents(pre);const sel=getSelection();sel.removeAllRanges();sel.addRange(rg);toast('Clipboard blocked here. The preview is selected; press Ctrl+C.',true);};
+  try{navigator.clipboard.writeText(t).then(()=>toast('CSV copied.'),fallback);}catch(e){fallback();}};
+
+let dl=null;
+// Plain browser download, used when the page is opened as a local file
+const localDl={save:({filename,data})=>{const blob=new Blob([data],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);return Promise.resolve({status:'saved'});}};
+$('download').onclick=async()=>{if(!dl)return;
+  try{await dl.save({filename:fileName(),data:buildCSV()});toast('Saved '+fileName()+'.');}
+  catch(e){const c=e&&e.code;
+    if(c==='declined')toast('Download cancelled.',true);
+    else if(c==='rate_limited')toast('A save prompt is already open.',true);
+    else{toast('Downloads aren’t available in this view. Use Copy CSV instead.',true);dl=null;$('download').hidden=true;}}};
+
+renderAll();
+$('download').disabled=true;
+if(window.claude&&claude.use){claude.use('downloads').then(d=>{dl=d;if(!d)$('download').hidden=true;update();}).catch(()=>{$('download').hidden=true;});}
+else{dl=localDl;update();}
+})();
+</script>
+</body></html>
